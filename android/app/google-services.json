@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "814772031148",
+    "project_id": "ayubolife-23d00",
+    "storage_bucket": "ayubolife-23d00.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:814772031148:android:be15e2ad41b873e7da9909",
+        "android_client_info": {
+          "package_name": "com.example.ayubolife"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "814772031148-sibvl0ksabv3418k1cgn191d5lmqq9fh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ayubolife",
+            "certificate_hash": "1b43da316466c00d0ea53840909606bcd6f8240c"
+          }
+        },
+        {
+          "client_id": "814772031148-56one3cmoi25ei4hqgvuprva5ru2fi0n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZfWXV0tBBJ2oAMkoRZ_dNuwLnWMEI2t0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "814772031148-56one3cmoi25ei4hqgvuprva5ru2fi0n.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "814772031148-l1mqq283e7s9g86mgjvi77fseukljk1o.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.ayubolife"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
