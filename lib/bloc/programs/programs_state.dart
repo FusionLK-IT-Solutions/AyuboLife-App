@@ -15,11 +15,13 @@ class ProgramsLoaded extends ProgramsState {
   final List<Map<String, dynamic>> recommendedPrograms;
   final List<Map<String, dynamic>> healthOnlinePrograms;
   final List<Map<String, dynamic>> managePrograms;
+  final Set<String> joinedPrograms; 
 
   const ProgramsLoaded({
     required this.recommendedPrograms,
     required this.healthOnlinePrograms,
     required this.managePrograms,
+    this.joinedPrograms = const {}, 
   });
 
   @override

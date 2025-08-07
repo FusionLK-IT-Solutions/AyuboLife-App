@@ -262,13 +262,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Add shared_preferences
 
 class GameHomeScreen extends StatefulWidget {
   @override
   _GameHomeScreenState createState() => _GameHomeScreenState();
 }
 
-class _GameHomeScreenState extends State<GameHomeScreen> 
+class _GameHomeScreenState extends State<GameHomeScreen>
     with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _refreshAnimationController;
@@ -279,13 +280,13 @@ class _GameHomeScreenState extends State<GameHomeScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animation controllers
     _rewardAnimationController = AnimationController(
       duration: Duration(milliseconds: 2000),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _refreshAnimationController = AnimationController(
       duration: Duration(milliseconds: 1000),
       vsync: this,
@@ -313,6 +314,7 @@ class _GameHomeScreenState extends State<GameHomeScreen>
   void dispose() {
     _rewardAnimationController.dispose();
     _refreshAnimationController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -321,6 +323,25 @@ class _GameHomeScreenState extends State<GameHomeScreen>
       _refreshAnimationController.reverse();
     });
     context.read<StepChallengeBloc>().add(RefreshStepChallenge());
+  }
+
+  // Function to save displayed treasure
+  Future<void> _saveDisplayedTreasure(int treasureKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> displayedTreasures =
+        prefs.getStringList('displayed_treasures') ?? [];
+    if (!displayedTreasures.contains(treasureKey.toString())) {
+      displayedTreasures.add(treasureKey.toString());
+      await prefs.setStringList('displayed_treasures', displayedTreasures);
+    }
+  }
+
+  // Function to check if treasure has been displayed
+  Future<bool> _isTreasureDisplayed(int treasureKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> displayedTreasures =
+        prefs.getStringList('displayed_treasures') ?? [];
+    return displayedTreasures.contains(treasureKey.toString());
   }
 
   @override
@@ -338,7 +359,7 @@ class _GameHomeScreenState extends State<GameHomeScreen>
           elevation: 0,
         ),
         body: BlocConsumer<StepChallengeBloc, StepChallengeState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is StepChallengeLoaded && state.collectedTreasures.isNotEmpty) {
               final newTreasure = state.collectedTreasures.last;
               final treasures = {
@@ -369,50 +390,56 @@ class _GameHomeScreenState extends State<GameHomeScreen>
               };
               final treasure = treasures[newTreasure];
               if (treasure != null) {
-                _audioPlayer.play(AssetSource('sounds/treasure_open.mp3'));
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/treasure_box.gif',
-                          height: 100,
-                          width: 100,
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                          'Congratulations!',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 10),
-                        Text('You found: ${treasure['gift'] ?? 'Unknown Treasure'}'),
-                        Text(treasure['description']?.toString() ?? 'No description available'),
-                        SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TreasuresDashboard(
-                                  collectedTreasures: state.collectedTreasures,
-                                  treasures: treasures,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Text('View Treasures'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[800],
-                            foregroundColor: Colors.white,
+                // Check if the treasure has been displayed before
+                bool isDisplayed = await _isTreasureDisplayed(newTreasure);
+                if (!isDisplayed) {
+                  _audioPlayer.play(AssetSource('sounds/treasure_open.mp3'));
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/treasure_box.gif',
+                            height: 100,
+                            width: 100,
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 20),
+                          Text(
+                            'Congratulations!',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 10),
+                          Text('You found: ${treasure['gift'] ?? 'Unknown Treasure'}'),
+                          Text(treasure['description']?.toString() ?? 'No description available'),
+                          SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () async {
+                              // Save the treasure as displayed
+                              await _saveDisplayedTreasure(newTreasure);
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TreasuresDashboard(
+                                    collectedTreasures: state.collectedTreasures,
+                                    treasures: treasures,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Text('View Treasures'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[800],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               }
             }
           },
@@ -439,7 +466,6 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                     polylines: state.polylines,
                     mapType: MapType.normal,
                   ),
-                  
                   // More transparent overlay card for step count and progress
                   Positioned(
                     top: 20,
@@ -448,7 +474,7 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                     child: Container(
                       padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4), // Increased transparency
+                        color: Colors.black.withOpacity(0.4),
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
@@ -512,7 +538,6 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                       ),
                     ),
                   ),
-
                   // Leaderboard Button (Bottom Left, No Animation, Transparent)
                   Positioned(
                     bottom: 20,
@@ -529,7 +554,7 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                       child: Container(
                         padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.6), // Transparent background
+                          color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.6),
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(
                             color: Colors.orange,
@@ -558,7 +583,6 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                       ),
                     ),
                   ),
-
                   // Sync Button (Bottom Right, Animated, Transparent)
                   Positioned(
                     bottom: 20,
@@ -573,7 +597,7 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                             child: Container(
                               padding: EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.6), // Transparent background
+                                color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.6),
                                 borderRadius: BorderRadius.circular(15),
                                 border: Border.all(
                                   color: Colors.blue,
@@ -605,7 +629,6 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                       ),
                     ),
                   ),
-
                   // Rewards Button (Right Edge, Middle, Animated, Transparent)
                   Positioned(
                     right: 20,
@@ -655,12 +678,8 @@ class _GameHomeScreenState extends State<GameHomeScreen>
                             child: Container(
                               padding: EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.3), // Transparent background
+                                color: Colors.purple.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(15),
-                                // border: Border.all(
-                                //   color: Colors.purple,
-                                //   width: 3,
-                                // ),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,

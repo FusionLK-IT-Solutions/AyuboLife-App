@@ -31,18 +31,26 @@ class ProgramsBloc extends Bloc<ProgramsEvent, ProgramsState> {
     }
   }
 
-  Future<void> _onInitializeSamplePrograms(InitializeSamplePrograms event, Emitter<ProgramsState> emit) async {
-    emit(ProgramsLoading());
-    try {
-      await _userRepository.createSamplePrograms();
-      final programs = await _userRepository.fetchPrograms();
-      emit(ProgramsLoaded(
-        recommendedPrograms: programs['recommended'] ?? [],
-        healthOnlinePrograms: programs['health_online'] ?? [],
-        managePrograms: programs['manage'] ?? [],
-      ));
-    } catch (e) {
-      emit(ProgramsError('Failed to initialize programs: $e'));
-    }
+ 
+  Future<void> _onInitializeSamplePrograms(
+  InitializeSamplePrograms event,
+  Emitter<ProgramsState> emit,
+) async {
+  emit(ProgramsLoading());
+
+  try {
+    final programs = await _userRepository.fetchPrograms();
+    final joinedPrograms = await _userRepository.getJoinedProgramIds();
+
+    emit(ProgramsLoaded(
+      recommendedPrograms: programs['recommended'] ?? [],
+      healthOnlinePrograms: programs['health_online'] ?? [],
+      managePrograms: programs['manage'] ?? [],
+      joinedPrograms: joinedPrograms.toSet(),
+    ));
+  } catch (e) {
+    emit(ProgramsError('Failed to load programs'));
   }
+}
+
 }
